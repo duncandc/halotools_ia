@@ -13,7 +13,7 @@ setup(
     author_email="duncanc@andrew.cmu.edu",
     description="Python tools for studying intrinsic alignments in simulations",
     long_description="An add-on package for Halotools which contains python tools for studying intrinsic alignments in simulations",
-    install_requires=["numpy, halotools"],
+    install_requires=["numpy","halotools"],
     packages=find_packages(),
     url="https://github.com/duncandc/halotools_ia",
 )
