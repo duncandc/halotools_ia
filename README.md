@@ -1,3 +1,3 @@
 # halotools_ia
 
-contact: 
+contact: duncanc@andrew.cmu.edu
