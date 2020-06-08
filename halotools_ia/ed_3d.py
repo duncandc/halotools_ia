@@ -156,7 +156,7 @@ def ed_3d(sample1, orientations1, sample2, rbins, weights1=None, weights2=None,
     marks2 = weights2
     marked_counts, counts = positional_marked_npairs_3d(sample1, sample2, rbins,
                                 period=period, weights1=marks1, weights2=marks2,
-                                weight_func_id=4, verbose=False, num_threads=num_threads,
+                                weight_func_id=4, num_threads=num_threads,
                                 approx_cell1_size=approx_cell1_size,
                                 approx_cell2_size=approx_cell2_size)
     marked_counts = np.diff(marked_counts)
@@ -164,13 +164,13 @@ def ed_3d(sample1, orientations1, sample2, rbins, weights1=None, weights2=None,
     # if no weights, use fast un-weihgted pair counter
     if np.all(weights1==1.0) & np.all(weights2==1.0):
         counts = npairs_3d(sample1, sample2, rbins,
-                       period=period, verbose=False, num_threads=num_threads,
+                       period=period, num_threads=num_threads,
                        approx_cell1_size=approx_cell1_size,
                        approx_cell2_size=approx_cell2_size)
     else:
         counts = marked_npairs_3d(sample1, sample2, rbins,
                        weights1=weights1, weights2=weights2, weight_func_id=1,
-                       period=period, verbose=False, num_threads=num_threads,
+                       period=period, num_threads=num_threads,
                        approx_cell1_size=approx_cell1_size,
                        approx_cell2_size=approx_cell2_size)
     counts = np.diff(counts)

@@ -167,20 +167,20 @@ def ee_projected(sample1, orientations1, sample2, orientations2, rp_bins, pi_max
     marks2[:,2] = orientations2[:,1]
     marked_counts = marked_npairs_xy_z(sample1, sample2, rp_bins, pi_bins,
                                      period=period, weights1=marks1, weights2=marks2,
-                                     weight_func_id=15, verbose=False, num_threads=num_threads,
+                                     weight_func_id=15, num_threads=num_threads,
                                      approx_cell1_size=approx_cell1_size, approx_cell2_size=approx_cell2_size)
     marked_counts = np.diff(np.diff(marked_counts, axis=0), axis=1)
 
     # if no weights, use fast un-weighted pair counter
     if np.all(weights1==1.0) & np.all(weights2==1.0):
         counts = npairs_xy_z(sample1, sample2, rp_bins, pi_bins,
-                       period=period, verbose=False, num_threads=num_threads,
+                       period=period, num_threads=num_threads,
                        approx_cell1_size=approx_cell1_size,
                        approx_cell2_size=approx_cell2_size)
     else:
         counts = marked_npairs_xy_z(sample1, sample2, rp_bins, pi_bins,
                        weights1=weights1, weights2=weights2, weight_func_id=1,
-                       period=period, verbose=False, num_threads=num_threads,
+                       period=period, num_threads=num_threads,
                        approx_cell1_size=approx_cell1_size,
                        approx_cell2_size=approx_cell2_size)
     counts = np.diff(np.diff(counts, axis=0), axis=1)
