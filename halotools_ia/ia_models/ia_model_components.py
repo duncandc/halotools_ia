@@ -521,7 +521,7 @@ class RadialSatelliteAlignment(object):
                 p = np.ones(len(table))*self.param_dict['satellite_alignment_strength']
         else:
             N = len(self.param_dict['x'])
-            p = np.ones(N*self.param_dict['satellite_alignment_strength'])
+            p = np.ones(N)*self.param_dict['satellite_alignment_strength']
 
         # set prim_gal_axis orientation
         A_v = axes_correlated_with_input_vector(major_input_vectors, p=p)
