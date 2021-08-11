@@ -21,6 +21,8 @@ from watson_dist import DimrothWatson
 from warnings import warn
 from astropy.utils.misc import NumpyRNGContext
 
+from halotools.utils import crossmatch
+
 
 __all__ = ('RandomAlignment',
            'CentralAlignment',
@@ -1007,7 +1009,7 @@ class SubhaloAlignment(object):
         if halocat is None:
             msg = "halocat must be passed as an argument to preserve subhalo information"
             raise Error(msg)
-        self.halocat = halocat
+        self._halocat = halocat
         
         self._rotate_relative = rotate_relative
 
