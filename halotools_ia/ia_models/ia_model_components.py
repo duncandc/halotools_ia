@@ -968,6 +968,173 @@ class HybridSatelliteAlignment(object):
         a[a>1.0]=1.0
         return a
 
+class SubhaloAlignment(object):
+    r"""
+    alignment model for satellite galaxies in sub-haloes aligning with their respective subhalos
+    most of the functionality here is copied from SatelltieAlignment by Duncan Campbell
+    """
+    def __init__(self, halocat=None, satellite_alignment_strength=1.0, prim_gal_axis='major', rotate_relative=True, **kwargs):
+        r"""
+        Parameters
+        ----------
+        satellite_alignment_strength : float
+            [-1,1] bounded number indicating alignment strength
+
+        prim_gal_axis :  string, optional
+            string indicating which galaxy principle axis is correlated with the halo alignment axis.
+            The options are: `major`, `intermediate`, and `minor`.
+            
+        rotate_relative : bool, optional
+            bool indicating whether any subhalos with real_subhalo = False should be rotated to 
+            preserve the relative orientation they had to their true host halo with the current host halo.
+            Default is True, which will rotate the false subhalos to keep the same relative orientation
+            with respect to the new host halo. A value of False will keep their original values.
+
+        alignment_keys : list
+            A list of strings indicating the keywords for the x,y- and z components of the
+            halo alignment vector. Deafult is ['halo_axisA_x', 'halo_axisA_y', 'halo_axisA_z'].
+
+        Notes
+        -----
+        If the kwargs or table contains a key "alignment_strength", when populating a mock,
+        this will be used instead of the `satellite_alignment_stregth` parameter passed during intialization.
+        This is how varying the alignment strength as a function of galaxy/halo properties is handeled.
+        
+        Unlike SatelliteAlignment, this alignment model needs a table to exist prior to being called. This is
+        because the 
+        """
+        
+        if halocat is None:
+            msg = "halocat must be passed as an argument to preserve subhalo information"
+            raise Error(msg)
+        self.halocat = halocat
+
+        self.gal_type = 'satellites'
+        self._mock_generation_calling_sequence = (['assign_satellite_orientation'])
+
+        self._galprop_dtypes_to_allocate = np.dtype(
+            [(str('galaxy_axisA_x'), 'f4'), (str('galaxy_axisA_y'), 'f4'), (str('galaxy_axisA_z'), 'f4'),
+             (str('galaxy_axisB_x'), 'f4'), (str('galaxy_axisB_y'), 'f4'), (str('galaxy_axisB_z'), 'f4'),
+             (str('galaxy_axisC_x'), 'f4'), (str('galaxy_axisC_y'), 'f4'), (str('galaxy_axisC_z'), 'f4')])
+
+        # specify the halo alignment vector
+        if 'alignment_keys' in kwargs.keys():
+            assert len(kwargs['alignment_keys'])==3
+            self.list_of_haloprops_needed = kwargs['alignment_keys']
+        else:
+            self.list_of_haloprops_needed = ['halo_axisA_x', 'halo_axisA_y', 'halo_axisA_z']
+
+        # set which galaxy axis is correlated with the halo alignment vector
+        possible_axis = ['major', 'intermediate', 'minor']
+        if prim_gal_axis in possible_axis:
+            if prim_gal_axis == possible_axis[0]: self.prim_gal_axis = 'A'
+            elif prim_gal_axis == possible_axis[1]: self.prim_gal_axis = 'B'
+            elif prim_gal_axis == possible_axis[2]: self.prim_gal_axis = 'C'
+        else:
+            msg = ('`prim_gal_axis` must be one of {0}, but instead is {1}.'.format(possible_axis, prim_gal_axis))
+            raise ValueError(msg)
+
+        self._methods_to_inherit = (
+            ['assign_satellite_orientation'])
+        self.param_dict = ({
+            'satellite_alignment_strength': satellite_alignment_strength})
+    
+    def _set_subhalo_orientation(self, **kwargs):
+        pass
+
+    def assign_satellite_orientation(self, **kwargs):
+        r"""
+        Assign a set of three orthoganl unit vectors indicating the orientation
+        of the galaxies' major, intermediate, and minor axis
+
+        Parameters
+        ==========
+        halo_axisA_x, halo_axisA_y, halo_axisA_z :  array_like
+             x,y,z components of halo alignment axis
+
+        Returns
+        =======
+        major_aixs, intermediate_axis, minor_axis :  numpy nd.arrays
+            arrays of galaxies' axes
+        """
+        if 'table' in kwargs.keys():
+            table = kwargs['table']
+            Ax = table[self.list_of_haloprops_needed[0]]
+            Ay = table[self.list_of_haloprops_needed[1]]
+            Az = table[self.list_of_haloprops_needed[2]]
+        else:
+            Ax = kwargs['halo_axisA_x']
+            Ay = kwargs['halo_axisA_y']
+            Az = kwargs['halo_axisA_z']
+
+        # get alignment strength for each galaxy
+        if 'table' in kwargs.keys():
+            try:
+                p = table['satellite_alignment_strength']
+            except KeyError:
+                msg = ('`satellite_alignment_strength` not detected in the table, using value in self.param_dict.')
+                warn(msg)
+                p = np.ones(len(Ax))*self.param_dict['satellite_alignment_strength']
+        else:
+            p = np.ones(len(Ax))*self.param_dict['satellite_alignment_strength']
+
+        # set prim_gal_axis orientation
+        major_input_vectors = np.vstack((Ax, Ay, Az)).T
+        A_v = axes_correlated_with_input_vector(major_input_vectors, p=p)
+
+        # randomly set secondary axis orientation
+        B_v = random_perpendicular_directions(A_v)
+
+        # the tertiary axis is determined
+        C_v = vectors_normal_to_planes(A_v, B_v)
+
+        # depending on the prim_gal_axis, assign correlated axes
+        if self.prim_gal_axis == 'A':
+            major_v = A_v
+            inter_v = B_v
+            minor_v = C_v
+        elif self.prim_gal_axis == 'B':
+            major_v = B_v
+            inter_v = A_v
+            minor_v = C_v
+        elif self.prim_gal_axis == 'C':
+            major_v = B_v
+            inter_v = C_v
+            minor_v = A_v
+        else:
+            msg = ('primary galaxy axis {0} is not recognized.'.format(self.prim_gal_axis))
+            raise ValueError(msg)
+
+        if 'table' in kwargs.keys():
+            try:
+                mask = (table['gal_type'] == self.gal_type)
+            except KeyError:
+                mask = np.array([True]*len(table))
+                msg = ("Because `gal_type` not indicated in `table`.",
+                       "The orientation is being assigned for all galaxies in the `table`.")
+                print(msg)
+
+            # check to see if the columns exist
+            for key in list(self._galprop_dtypes_to_allocate.names):
+                if key not in table.keys():
+                    table[key] = 0.0
+
+            # add orientations to the galaxy table
+            table['galaxy_axisA_x'][mask] = major_v[mask, 0]
+            table['galaxy_axisA_y'][mask] = major_v[mask, 1]
+            table['galaxy_axisA_z'][mask] = major_v[mask, 2]
+
+            table['galaxy_axisB_x'][mask] = inter_v[mask, 0]
+            table['galaxy_axisB_y'][mask] = inter_v[mask, 1]
+            table['galaxy_axisB_z'][mask] = inter_v[mask, 2]
+
+            table['galaxy_axisC_x'][mask] = minor_v[mask, 0]
+            table['galaxy_axisC_y'][mask] = minor_v[mask, 1]
+            table['galaxy_axisC_z'][mask] = minor_v[mask, 2]
+
+            return table
+        else:
+            return major_v, inter_v, minor_v
 
 def axes_correlated_with_z(p, seed=None):
     r"""
