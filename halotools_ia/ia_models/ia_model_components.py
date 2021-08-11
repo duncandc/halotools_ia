@@ -1008,6 +1008,8 @@ class SubhaloAlignment(object):
             msg = "halocat must be passed as an argument to preserve subhalo information"
             raise Error(msg)
         self.halocat = halocat
+        
+        self._rotate_relative = rotate_relative
 
         self.gal_type = 'satellites'
         self._mock_generation_calling_sequence = (['assign_satellite_orientation'])
@@ -1039,7 +1041,46 @@ class SubhaloAlignment(object):
         self.param_dict = ({
             'satellite_alignment_strength': satellite_alignment_strength})
     
-    def _set_subhalo_orientation(self, **kwargs):
+    def _set_subhalo_values(self, **kwargs):
+        r"""
+        Earlier, the host halo values were input as a default for every halo within.
+        Now, the satellite galaxies will have their subhalo information overwritten so all alignment will be with respect
+        to the suhalo, not the host halo
+        
+        Parameters
+        ==========
+        table : astropy table holding the halo and galaxy information for every galaxy
+        
+        Returns
+        =======
+        None, table should be altered in place and will not need to return
+        """
+        table = kwargs['table']
+        
+        # Get a list of the columns shared by both the halocat and the table
+        cols = list( set(self._halocat.halo_table.columns) & set(table.columns) )
+        # Remove the halo_id column, otherwise there will be an issue when overwriting
+        # Since this is the column used to match, there is no need to overwrite anyway
+        cols.remove('halo_id')
+        
+        # find where each halo_id appears in the full halocat
+        halo_ids = table['halo_id']
+        inds1, inds2 = crossmatch( halo_ids, self._halocat.halo_table['halo_id'] )
+        
+        # For the halo_id values in the current model, set the subhalo values to their value from the halocat
+        # This overwrites the information from their host halo that was used for them instead (unless that halo is the host halo)
+        for i in range(len(inds1)):
+            for col in cols:
+                # This is not the most elegant way to do things, but it's what works for now
+                table[col][ inds1[i] ] = self._halocat.halo_table[col][ inds2[i] ]
+            
+            # If the halo is not a real subhalo, overwrite the orientation so it is the same relative to its new host halo as its original
+            if not table[ 'real_subhalo' ][ inds1[i] ]:
+                self._orient_false_subhalo( table, inds1[i] )
+       
+    def _orient_false_subhalo(self, table, ind):
+        # TODO : Implement function so that false subhalos retain the same relative orientation to the new
+        # host halo as to their original
         pass
 
     def assign_satellite_orientation(self, **kwargs):
@@ -1057,6 +1098,10 @@ class SubhaloAlignment(object):
         major_aixs, intermediate_axis, minor_axis :  numpy nd.arrays
             arrays of galaxies' axes
         """
+        
+        # Before anything else, overwrite the default host halo values with the subhalo values for each satellite galaxy
+        self._set_subhalo_values(table=kwargs['table'])
+        
         if 'table' in kwargs.keys():
             table = kwargs['table']
             Ax = table[self.list_of_haloprops_needed[0]]
