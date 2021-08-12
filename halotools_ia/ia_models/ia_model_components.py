@@ -1072,13 +1072,16 @@ class SubhaloAlignment(object):
         # For the halo_id values in the current model, set the subhalo values to their value from the halocat
         # This overwrites the information from their host halo that was used for them instead (unless that halo is the host halo)
         for i in range(len(inds1)):
-            for col in cols:
-                # This is not the most elegant way to do things, but it's what works for now
-                table[col][ inds1[i] ] = self._halocat.halo_table[col][ inds2[i] ]
             
-            # If the halo is not a real subhalo, overwrite the orientation so it is the same relative to its new host halo as its original
-            if not table[ 'real_subhalo' ][ inds1[i] ]:
-                self._orient_false_subhalo( table, inds1[i] )
+            # Only the satellite information (for their subhalos) will need to be overwritten
+            if table['gal_type'][ inds1[i] ] == 'satellites':
+                for col in cols:
+                    # This is not the most elegant way to do things, but it's what works for now
+                    table[col][ inds1[i] ] = self._halocat.halo_table[col][ inds2[i] ]
+                
+                # If the halo is not a real subhalo, overwrite the orientation so it is the same relative to its new host halo as its original
+                if not table[ 'real_subhalo' ][ inds1[i] ]:
+                    self._orient_false_subhalo( table, inds1[i] )
        
     def _orient_false_subhalo(self, table, ind):
         # TODO : Implement function so that false subhalos retain the same relative orientation to the new
