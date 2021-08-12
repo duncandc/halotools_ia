@@ -1064,6 +1064,7 @@ class SubhaloAlignment(object):
         # Remove the halo_id column, otherwise there will be an issue when overwriting
         # Since this is the column used to match, there is no need to overwrite anyway
         cols.remove('halo_id')
+        cols.remove('halo_hostid')              # Keep the overwritten host halo id
         
         # find where each halo_id appears in the full halocat
         halo_ids = table['halo_id']
