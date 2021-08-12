@@ -1084,6 +1084,36 @@ class SubhaloAlignment(object):
         # TODO : Implement function so that false subhalos retain the same relative orientation to the new
         # host halo as to their original
         pass
+    
+    def _get_rotation_matrix(a, b):
+        r"""
+        Returns the rotation matrix (only 3D) needed to rotate a into b
+        
+        Parameters
+        ==========
+        a : 3 element numpy array representing a vector in 3D
+        b : 3 element numpy array representing a vector in 3D
+        
+        Returns
+        =======
+        mat : 3x3 numpy array representing the rotation matrix needed to rotate a in the direction of b
+        """
+        unit_a = normalized_vectors(a)
+        unit_b = normalized_vectors(b)
+        v = np.cross(unit_a,unit_b)[0]
+        s = np.linalg.norm(v)                           # Sin of the angle
+        c = np.dot(unit_a,unit_b.T)                  # Cos of the angle
+        
+        vx = np.zeros((3,3))
+        vx[0,1] = -v[2]
+        vx[1,0] = v[2]
+        vx[0,2] = v[1]
+        vx[2,0] = -v[1]
+        vx[1,2] = -v[0]
+        vx[2,1] = v[0]
+        
+        mat = np.eye(3) + vx + np.dot(vx,vx)*((1-c)/(s*s))
+        return mat
 
     def assign_satellite_orientation(self, **kwargs):
         r"""
