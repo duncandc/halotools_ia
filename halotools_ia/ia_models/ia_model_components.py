@@ -1008,7 +1008,7 @@ class SubhaloAlignment(object):
         
         if halocat is None:
             msg = "halocat must be passed as an argument to preserve subhalo information"
-            raise Error(msg)
+            raise Exception(msg)
         self._halocat = halocat
         
         self._rotate_relative = rotate_relative
@@ -1089,6 +1089,7 @@ class SubhaloAlignment(object):
         # Values of interest
         axis_A = ['halo_axisA_x', 'halo_axisA_y', 'halo_axisA_z']    # Use this axis to rotate
         velocity = ['halo_vx', 'halo_vy', 'halo_vz']
+        position = ['halo_x', 'halo_y', 'halo_z']
         
         mask = ( table['gal_type'] == 'satellites' ) & ( table['real_subhalo'] == False )
         
@@ -1116,6 +1117,7 @@ class SubhaloAlignment(object):
             # Get the values (axis and velocity) to be rotated from the subhalo
             halo_axisA = np.array([val for val in halo_row[axis_A][0] ])
             halo_velocity = np.array([val for val in halo_row[velocity][0] ])
+            halo_position = np.array([val for val in halo_row[position][0] ])
             
             # Get the rotation axis to rotate original_host_axisA into new_host_axisA
             # Then use that rotation matrix to rotate halo_axisA and halo_velocities
@@ -1126,16 +1128,7 @@ class SubhaloAlignment(object):
             for j in range(len(axis_A)):
                 table[ axis_A[j] ][ inds2[i] ] = rotated_axis[j]
                 table[ velocity[j] ][ inds2[i] ] = halo_velocity[j]
-            
-            # PURELY FOR CHECKING THAT RELATIVE ORIENTATION IS KEPT AND THAT THE RIGHT PLACE WAS OVERWRITTEN
-            halo_row = table[ mask & ( table['halo_id'] == halo_ids[i] ) ]
-            halo_axisA = np.array([val for val in halo_row[axis_A][0] ])
-            halo_velocity = np.array([val for val in halo_row[velocity][0] ])
-            
-            og_axis = angles_between_list_of_vectors([halo_axisA], [original_host_axisA])
-            og_v = angles_between_list_of_vectors([halo_velocity], [original_host_axisA])
-            n_axis = angles_between_list_of_vectors([rotated_axis], [new_host_axisA])
-            n_v = angles_between_list_of_vectors([rotated_velocity], [new_host_axisA])
+                table[ position[j] ][ inds2[i] ] = halo_position[j]
     
     def _get_rotation_matrix(self, a, b):
         r"""
