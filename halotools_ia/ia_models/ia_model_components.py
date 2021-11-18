@@ -1346,6 +1346,13 @@ def axes_correlated_with_input_vector(input_vectors, p=0., seed=None):
     input_unit_vectors = normalized_vectors(input_vectors)
     assert input_unit_vectors.shape[1] == 3
     npts = input_unit_vectors.shape[0]
+    
+    # For some reason, this function is very sensitive, and the difference between float32 and float64 drastically changes results
+    # With only a single alignment strength, the np.ones(length)*alignmnet_strength gives float64 numbers
+    # but pulling the satellite_slignment_strength column from the table gives float32
+    # At values of exactl 1 and -1, the float64 numbers do fine, but float32 don'table
+    # Not sure why. But they do. So I put in this next line
+    p = np.array(p).astype("float64")
 
     z_correlated_axes = axes_correlated_with_z(p, seed)
 
