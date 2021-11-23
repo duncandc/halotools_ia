@@ -1070,19 +1070,13 @@ class SubhaloAlignment(object):
         halo_ids = table['halo_id']
         inds1, inds2 = crossmatch( halo_ids, self._halocat.halo_table['halo_id'] )
         
-        # For the halo_id values in the current model, set the subhalo values to their value from the halocat
         # This overwrites the information from their host halo that was used for them instead (unless that halo is the host halo)
-        for i in range(len(inds1)):
-            
-            # Only the satellite information (for their subhalos) will need to be overwritten
-            if table['gal_type'][ inds1[i] ] == 'satellites':
-                for col in cols:
-                    # This is not the most elegant way to do things, but it's what works for now
-                    table[col][ inds1[i] ] = self._halocat.halo_table[col][ inds2[i] ]
+        for col in cols:
+            table[col][ inds1 ] = self._halocat.halo_table[col][ inds2 ]
                 
         # If the halo is not a real subhalo, overwrite the orientation so it is the same relative to its new host halo as its original
         if self._rotate_relative:
-            self._orient_false_subhalo( table )
+            self._orient_false_subhalo( table=table )
        
     def _orient_false_subhalo(self, table):
         
@@ -1094,41 +1088,37 @@ class SubhaloAlignment(object):
         mask = ( table['gal_type'] == 'satellites' ) & ( table['real_subhalo'] == False )
         
         halo_ids = table[mask]['halo_id']
-        original_host_ids = [ self._halocat.halo_table[ self._halocat.halo_table['halo_id'] == hid ]['halo_hostid'] for hid in halo_ids ]
+        inds1, inds2 = crossmatch(halo_ids, self._halocat.halo_table["halo_id"])
+        original_host_ids = self._halocat.halo_table[inds2]["halo_hostid"]
         new_host_ids = table[mask]['halo_hostid']
         
         # inds1[i] is the index in halo_ids of the halo id at position i in model_instance.mock.galaxy_table['halo_ids']
         # Similarly, inds2[i] is the index in model_instance.mock.galaxy_table['halo_ids'] of the halo id in position i in halo_ids
         inds1, inds2 = crossmatch(table['halo_id'], halo_ids)
         
-        # For each false subhalo, find the matrix that would rotate the old host halo into the new host halo
-        # This rotation matrix  will rotate the halo_axisA_(x,y,z) and halo_v(x,y,z) so that their relative orientation
-        # to the new host halo is the same as to the original
-        for i in range(len(halo_ids)):
-            # Get the rows for the subhalo, old host halo, and new host halo
-            halo_row = table[ mask & ( table['halo_id'] == halo_ids[i] ) ]
-            original_host_row = self._halocat.halo_table[ self._halocat.halo_table["halo_id"] == original_host_ids[i] ]
-            new_host_row = self._halocat.halo_table[ self._halocat.halo_table['halo_id'] == new_host_ids[i] ]
-                    
-            # Get the axes from the host halos
-            original_host_axisA = np.array([val for val in original_host_row[axis_A][0] ])
-            new_host_axisA = np.array([val for val in new_host_row[axis_A][0] ])
-            
-            # Get the values (axis and velocity) to be rotated from the subhalo
-            halo_axisA = np.array([val for val in halo_row[axis_A][0] ])
-            halo_velocity = np.array([val for val in halo_row[velocity][0] ])
-            halo_position = np.array([val for val in halo_row[position][0] ])
-            
-            # Get the rotation axis to rotate original_host_axisA into new_host_axisA
-            # Then use that rotation matrix to rotate halo_axisA and halo_velocities
-            rot = self._get_rotation_matrix(original_host_axisA, new_host_axisA)
-            rotated_axis = rotate_vector_collection(rot, np.array([halo_axisA]) )[0]
-            rotated_velocity = rotate_vector_collection(rot, np.array([halo_velocity]) )[0]
-            
-            for j in range(len(axis_A)):
-                table[ axis_A[j] ][ inds2[i] ] = rotated_axis[j]
-                table[ velocity[j] ][ inds2[i] ] = halo_velocity[j]
-                table[ position[j] ][ inds2[i] ] = halo_position[j]
+        halo_axesA = np.array( [ table[mask][axis_A[0]], table[mask][axis_A[1]], table[mask][axis_A[2]] ] ).T
+        halo_velocities = np.array( [ table[mask][velocity[0]], table[mask][velocity[1]], table[mask][velocity[2]] ] ).T
+        halo_positions = np.array( [ table[mask][position[0]], table[mask][position[1]], table[mask][position[2]] ] ).T
+        
+        # Get original host axes
+        inds1, inds2 = crossmatch( original_host_ids, self._halocat.halo_table["halo_id"] )
+        original_host_axesA = np.array( [ self._halocat.halo_table[inds2][axis_A[0]], self._halocat.halo_table[inds2][axis_A[1]], self._halocat.halo_table[inds2][axis_A[2]] ] ).T
+        
+        # Get new host axes
+        inds1, inds2 = crossmatch(new_host_ids, self._halocat.halo_table["halo_id"])
+        new_host_axesA = np.array( [ self._halocat.halo_table[inds2][axis_A[0]], self._halocat.halo_table[inds2][axis_A[1]], self._halocat.halo_table[inds2][axis_A[2]] ] ).T
+    
+        # Get the rotation axis to rotate original_host_axisA into new_host_axisA
+        # Then use that rotation matrix to rotate halo_axisA and halo_velocities
+        rot = np.array( [ self._get_rotation_matrix(original_host_axesA[i], new_host_axesA[i]) for i in range(len(original_host_axesA)) ] )
+        rotated_axes = rotate_vector_collection(rot, halo_axesA )
+        rotated_velocities = rotate_vector_collection(rot, halo_velocities )
+        rotated_positions = rotate_vector_collection(rot, halo_positions)
+        
+        for i in range(len(axis_A)):
+            table[ axis_A[i] ][ mask ] = rotated_axes[:,i]
+            table[ velocity[i] ][ mask ] = rotated_velocities[:,i]
+            table[ position[i] ][ mask ] = rotated_positions[:,i]
     
     def _get_rotation_matrix(self, a, b):
         r"""
