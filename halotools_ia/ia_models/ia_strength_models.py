@@ -272,7 +272,7 @@ class RadialSatelliteAlignmentStrengthAlternate():
     model for the stregth of alignment of satellites
     """
 
-    def __init__(self,  satellite_alignment_a= 0.00650463, satellite_alignment_gamma=-0.04322356):
+    def __init__(self,  satellite_alignment_a= 0.8045208899, satellite_alignment_gamma=-0.04322356):
         """
         Parameters
         ==========
