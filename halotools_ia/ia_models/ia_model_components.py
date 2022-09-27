@@ -1094,7 +1094,6 @@ class SubhaloAlignment(object):
         
         # inds1[i] is the index in halo_ids of the halo id at position i in model_instance.mock.galaxy_table['halo_ids']
         # Similarly, inds2[i] is the index in model_instance.mock.galaxy_table['halo_ids'] of the halo id in position i in halo_ids
-        inds1, inds2 = crossmatch(table['halo_id'], halo_ids)
         
         halo_axesA = np.array( [ table[mask][axis_A[0]], table[mask][axis_A[1]], table[mask][axis_A[2]] ] ).T
         halo_velocities = np.array( [ table[mask][velocity[0]], table[mask][velocity[1]], table[mask][velocity[2]] ] ).T
