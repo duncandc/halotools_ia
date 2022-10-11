@@ -1089,6 +1089,12 @@ class SubhaloAlignment(object):
         
         halo_ids = table[mask]['halo_id']
         inds1, inds2 = crossmatch(halo_ids, self._halocat.halo_table["halo_id"])
+        
+        # re-order to match halo_ids
+        # remember that crossmatch will match sample1[inds1] == sample2[inds2] without preserving original order
+        og_order = np.arange(len(halo_ids))
+        reorder = np.argsort( og_order[inds1] )
+        
         original_host_ids = self._halocat.halo_table[inds2]["halo_hostid"]
         new_host_ids = table[mask]['halo_hostid']
         
@@ -1103,9 +1109,19 @@ class SubhaloAlignment(object):
         inds1, inds2 = crossmatch( original_host_ids, self._halocat.halo_table["halo_id"] )
         original_host_axesA = np.array( [ self._halocat.halo_table[inds2][axis_A[0]], self._halocat.halo_table[inds2][axis_A[1]], self._halocat.halo_table[inds2][axis_A[2]] ] ).T
         
+        # re-order to match original_host_ids
+        og_order = np.arange(len(original_host_ids))
+        reorder = np.argsort( og_order[inds1] )
+        original_host_axesA = original_host_axesA[reorder]
+        
         # Get new host axes
         inds1, inds2 = crossmatch(new_host_ids, self._halocat.halo_table["halo_id"])
         new_host_axesA = np.array( [ self._halocat.halo_table[inds2][axis_A[0]], self._halocat.halo_table[inds2][axis_A[1]], self._halocat.halo_table[inds2][axis_A[2]] ] ).T
+        
+        # re-order to match new_host_ids
+        og_order = np.arange(len(new_host_ids))
+        reorder = np.argsort( og_order[inds1] )
+        new_host_axesA = new_host_axesA[reorder]
     
         # Get the rotation axis to rotate original_host_axisA into new_host_axisA
         # Then use that rotation matrix to rotate halo_axisA and halo_velocities
