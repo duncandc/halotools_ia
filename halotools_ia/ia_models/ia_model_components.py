@@ -403,7 +403,6 @@ class SatelliteAlignment(object):
             return major_v, inter_v, minor_v
 
 
-
 class RadialSatelliteAlignment(object):
     r"""
     radial alignment model for satellite galaxies
@@ -970,6 +969,7 @@ class HybridSatelliteAlignment(object):
         a[a>1.0]=1.0
         return a
 
+
 class SubhaloAlignment(object):
     r"""
     alignment model for satellite galaxies in sub-haloes aligning with their respective subhalos
@@ -1079,6 +1079,19 @@ class SubhaloAlignment(object):
             self._orient_false_subhalo( table=table )
        
     def _orient_false_subhalo(self, table):
+        r"""
+        For subhalos taken from other host halos (marked by real_subhalo == False), this function rotates the false subhalos so 
+        that their relative orientation with respect to their new host halo is the same as their original orientation was with
+        respect to their original host halo. Rotates the position, orientation, and velocities.
+
+        Parameters
+        ==========
+        table: astropy table holding the halo and galaxy information for the model
+
+        Returns
+        =======
+        None, the table is modified in place
+        """
         
         # Values of interest
         axis_A = ['halo_axisA_x', 'halo_axisA_y', 'halo_axisA_z']    # Use this axis to rotate
@@ -1089,11 +1102,6 @@ class SubhaloAlignment(object):
         
         halo_ids = table[mask]['halo_id']
         inds1, inds2 = crossmatch(halo_ids, self._halocat.halo_table["halo_id"])
-        
-        # re-order to match halo_ids
-        # remember that crossmatch will match sample1[inds1] == sample2[inds2] without preserving original order
-        og_order = np.arange(len(halo_ids))
-        reorder = np.argsort( og_order[inds1] )
         
         original_host_ids = self._halocat.halo_table[inds2]["halo_hostid"]
         new_host_ids = table[mask]['halo_hostid']
@@ -1137,7 +1145,8 @@ class SubhaloAlignment(object):
     
     def _get_rotation_matrix(self, a, b):
         r"""
-        Returns the rotation matrix (only 3D) needed to rotate a into b
+        Returns the rotation matrix (only 3D) needed to rotate a into b.
+        Used for _orient_false_subhalo
         
         Parameters
         ==========
@@ -1262,6 +1271,7 @@ class SubhaloAlignment(object):
             return table
         else:
             return major_v, inter_v, minor_v
+
 
 def axes_correlated_with_z(p, seed=None):
     r"""
