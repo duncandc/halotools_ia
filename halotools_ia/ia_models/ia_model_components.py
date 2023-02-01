@@ -1105,6 +1105,12 @@ class SubhaloAlignment(object):
         
         original_host_ids = self._halocat.halo_table[inds2]["halo_hostid"]
         new_host_ids = table[mask]['halo_hostid']
+
+        # crossmatch does not preserve the order
+        # this will allow the crossmatched original_host_ids to match the original order (the same order as in mask)
+        og_order = np.arange(len(original_host_ids))
+        reorder = np.argsort(og_order[inds1])
+        original_host_ids = original_host_ids[reorder]
         
         # inds1[i] is the index in halo_ids of the halo id at position i in model_instance.mock.galaxy_table['halo_ids']
         # Similarly, inds2[i] is the index in model_instance.mock.galaxy_table['halo_ids'] of the halo id in position i in halo_ids
