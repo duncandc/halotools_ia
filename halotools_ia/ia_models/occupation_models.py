@@ -16,8 +16,8 @@ __author__ = ('Duncan Campbell')
 
 class SubHaloPositions():
     """
-	galaxy occupation model that places centrals and satellites in haloes and sub-haloes
-	"""
+    galaxy occupation model that places centrals and satellites in haloes and sub-haloes
+    """
 
     def __init__(self):
         """
@@ -97,7 +97,7 @@ class SubHaloPositions():
 class IsotropicSubhaloPositions():
     """
     galaxy occupation model that places centrals and satellites in haloes and isotropized sub-haloes
-	"""
+    """
 
     def __init__(self, **kwargs):
 
@@ -124,7 +124,7 @@ class IsotropicSubhaloPositions():
     def assign_positions(self, **kwargs):
         """
         assign satellite positions based on subhalo radial positions and random angular positions.
-    	"""
+        """
 
         if 'table' in kwargs.keys():
             table = kwargs['table']
@@ -224,9 +224,9 @@ class IsotropicSubhaloPositions():
             return np.vstack((x,y,z)).T
 
     def assign_gal_type(self, **kwargs):
-    	"""
+        """
         specify central and satellites
-    	"""
+        """
 
         if 'table' in kwargs.keys():
             table = kwargs['table']
@@ -494,7 +494,7 @@ class TriaxialNFW():
             halo_axisC_y = kwargs['halo_axisC_y']
             halo_axisC_z = kwargs['halo_axisC_z']
             concentration = kwargs['halo_nfw_conc']
-            rvir = tabel['halo_rvir']
+            rvir = table['halo_rvir']
             try:
                 Lbox = kwargs['Lbox']
             except KeyError:
